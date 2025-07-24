@@ -1,6 +1,7 @@
 import pygame
 import time
 import random
+import math
 from config import *
 from note import Note
 from animations import Explosion, Miss
@@ -26,13 +27,13 @@ class Game:
         self.tiempo_inicio = time.time()
         self.last_hit_evaluation = None
         self.pattern_index = 0
+        self.columns = [{"x": i * COLUMN_WIDTH, "angle": 0} for i in range(4)]
         self.patterns = [
-            [0, 1, 2, 3],
-            [0, 2, 1, 3],
-            [3, 2, 1, 0],
-            [0, 1, 0, 1],
-            [2, 3, 2, 3],
-            [0, 3, 1, 2],
+            [0, 1, 2, 3], [0, 2, 1, 3], [3, 2, 1, 0], [0, 1, 0, 1], [2, 3, 2, 3], [0, 3, 1, 2],
+            # Nuevos patrones más complejos
+            [0, 1, 2, 1], [3, 2, 1, 2], [0, 2, 0, 3], [1, 3, 1, 2],
+            [0, 1, 3, 2], [0, 3, 2, 1], [1, 2, 0, 3], [1, 3, 0, 2],
+            [2, 0, 1, 3], [2, 1, 3, 0], [3, 0, 2, 1], [3, 1, 0, 2]
         ]
 
     def reset_timer(self):
@@ -63,10 +64,23 @@ class Game:
         """
         Generates a new note with a random column.
         """
-        pattern = random.choice(self.patterns)
-        columna = pattern[self.pattern_index % len(pattern)]
-        self.pattern_index += 1
-        return Note(columna)
+        notes_to_generate = []
+        if self.nivel > 15:
+            num_notes = random.choices([1, 2, 3], weights=[0.6, 0.3, 0.1], k=1)[0]
+        elif self.nivel > 10:
+            num_notes = random.choices([1, 2], weights=[0.8, 0.2], k=1)[0]
+        else:
+            num_notes = 1
+
+        available_columns = [0, 1, 2, 3]
+        for _ in range(num_notes):
+            if not available_columns:
+                break
+            columna = random.choice(available_columns)
+            available_columns.remove(columna)
+            notes_to_generate.append(Note(columna))
+
+        return notes_to_generate
 
     def evaluate_hit(self, nota):
         """
@@ -93,7 +107,9 @@ class Game:
         velocidad_base = min(12, NOTE_SPEED + self.nivel * NOTE_SPEED_INCREASE_RATE)
 
         if ahora - self.tiempo_ultima_nota > intervalo_notas:
-            self.notas.append(self.generate_note())
+            new_notes = self.generate_note()
+            for note in new_notes:
+                self.notas.append(note)
             self.tiempo_ultima_nota = ahora
 
         for nota in self.notas[:]:
@@ -127,6 +143,17 @@ class Game:
             anim.update(dt)
             if anim.completed:
                 self.animations.remove(anim)
+
+        self.update_columns()
+
+    def update_columns(self):
+        if self.nivel > 10:
+            for i, col in enumerate(self.columns):
+                angle_factor = (self.nivel - 10) / 10.0
+                col["angle"] = math.sin(self.tiempo_juego * 2 + i) * 5 * angle_factor
+
+                offset_factor = (self.nivel - 10) / 5.0
+                col["x"] = i * COLUMN_WIDTH + math.sin(self.tiempo_juego + i) * 20 * offset_factor
 
     def handle_hit(self, nota):
         """

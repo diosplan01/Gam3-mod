@@ -33,16 +33,27 @@ def draw_hit_evaluation(win, evaluation):
         text = fuente_grande.render(evaluation.upper(), True, color)
         win.blit(text, (cfg.WIDTH//2 - text.get_width()//2, cfg.HIT_EVALUATION_Y))
 
+column_surfaces = []
+for i in range(4):
+    columna_surface = pygame.Surface((cfg.COLUMN_WIDTH, cfg.HEIGHT), pygame.SRCALPHA)
+    columna_surface.fill((0, 0, 0, 0))
+    pygame.draw.line(columna_surface, cfg.LINE_COLOR, (0, 0), (0, cfg.HEIGHT), cfg.LINE_WIDTH)
+    pygame.draw.line(columna_surface, cfg.LINE_COLOR, (cfg.COLUMN_WIDTH, 0), (cfg.COLUMN_WIDTH, cfg.HEIGHT), cfg.LINE_WIDTH)
+    column_surfaces.append(columna_surface)
+
 def draw_game(win, game, teclas, glow_surface):
     win.fill(cfg.BACKGROUND_COLOR)
 
-    for i in range(1, 4):
-        pygame.draw.line(win, cfg.LINE_COLOR, (i * cfg.COLUMN_WIDTH, 0), (i * cfg.COLUMN_WIDTH, cfg.HEIGHT), cfg.LINE_WIDTH)
+    for i in range(4):
+        rotated_surface = pygame.transform.rotate(column_surfaces[i], game.columns[i]["angle"])
+        win.blit(rotated_surface, (game.columns[i]["x"] - rotated_surface.get_width() / 2 + cfg.COLUMN_WIDTH / 2, cfg.HEIGHT / 2 - rotated_surface.get_height() / 2))
+
 
     for nota in game.notas:
         if nota.activa:
-            x = nota.columna * cfg.COLUMN_WIDTH + (cfg.COLUMN_WIDTH - cfg.NOTE_X_OFFSET) // 2
-            draw_note(win, x, nota.y, nota.color, nota.alpha)
+            columna = game.columns[nota.columna]
+            nota.x = columna["x"] + (cfg.COLUMN_WIDTH - cfg.NOTE_WIDTH) / 2
+            draw_note(win, nota.x, nota.y, nota.color, nota.alpha)
 
     pygame.draw.line(win, cfg.HIT_ZONE_COLOR, (0, cfg.HIT_ZONE_Y), (cfg.WIDTH, cfg.HIT_ZONE_Y), cfg.HIT_ZONE_LINE_WIDTH)
 
