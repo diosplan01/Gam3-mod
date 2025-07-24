@@ -11,6 +11,7 @@ class Note:
         self.color = COLORES[columna]
         self.alpha = 255
         self.creado = time.time()
+        self.x = 0
 
     def move(self, dt):
         self.y += self.velocidad * dt * 60
